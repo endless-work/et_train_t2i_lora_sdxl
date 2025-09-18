@@ -35,7 +35,7 @@ cd /workspace/fine-tuning/scripts
 # Download the training script:
 wget https://raw.githubusercontent.com/endless-work/et_train_t2i_lora_sdxl/main/et_train_t2i_lora_sdxl.py
 
-# Example Training Command
+# 
 accelerate launch /workspace/fine-tuning/scripts/et_train_t2i_lora_sdxl.py \
   --pretrained_model_name_or_path=stabilityai/stable-diffusion-xl-base-1.0 \
   --dataset_name=endlesstools/et-sdxl-lora-wood \
@@ -52,3 +52,21 @@ accelerate launch /workspace/fine-tuning/scripts/et_train_t2i_lora_sdxl.py \
   --output_dir="/workspace/fine-tuning/outputs/sdxl-wood-lora"
 
 
+# create push_hf_trained.py for push on HF model repo
+cat > push_hf_trained.py << 'EOF'
+from huggingface_hub import HfApi
+
+api = HfApi()
+
+api.upload_folder(
+    folder_path="/workspace/fine-tuning/outputs/sdxl-wood-lora",
+    repo_id="endlesstools/et-sdxl-lora-weights-v2",
+    repo_type="model",
+    commit_message="Upload LoRA weights"
+)
+
+print("✅ All files uploaded to Hugging Face Hub")
+EOF
+
+# start push_hf_trained.py
+python push_hf_trained.py
