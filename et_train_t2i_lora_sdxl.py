@@ -1267,6 +1267,8 @@ def main(args):
                     torch_dtype=weight_dtype,
                 )
 
+                pipeline.load_lora_weights(args.output_dir)
+
                 images = log_validation(pipeline, args, accelerator, epoch)
 
                 ########################################################
