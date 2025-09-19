@@ -348,6 +348,23 @@ def parse_args(input_args=None):
         default=None,
         help=("Max number of checkpoints to store."),
     )
+
+    ########################################################
+    ############# ENDLESS TOOLS MODIFICATION ###############
+    ########################################################
+
+    parser.add_argument(
+        "--checkpoint_dir",
+        type=str,
+        default=None,
+        help="Directory for intermediate training checkpoints (full model + optimizer state). "
+            "If not set, checkpoints are saved inside output_dir (not recommended)."
+    )
+    
+    ########################################################
+    ########################################################
+
+
     parser.add_argument(
         "--resume_from_checkpoint",
         type=str,
@@ -1243,9 +1260,22 @@ def main(args):
                                     removing_checkpoint = os.path.join(args.output_dir, removing_checkpoint)
                                     shutil.rmtree(removing_checkpoint)
 
-                        save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
+                        # save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
+                        # accelerator.save_state(save_path)
+                        # logger.info(f"Saved state to {save_path}")
+
+                        ########################################################
+                        ############# ENDLESS TOOLS MODIFICATION ###############
+                        ########################################################
+
+                        ckpt_root = args.checkpoint_dir if args.checkpoint_dir is not None else args.output_dir
+                        save_path = os.path.join(ckpt_root, f"checkpoint-{global_step}")
                         accelerator.save_state(save_path)
-                        logger.info(f"Saved state to {save_path}")
+                        logger.info(f"Saved full checkpoint to {save_path}")
+
+                        ########################################################
+                        ########################################################
+                        ########################################################
 
             logs = {"step_loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0]}
             progress_bar.set_postfix(**logs)
@@ -1267,7 +1297,10 @@ def main(args):
                     torch_dtype=weight_dtype,
                 )
 
-                pipeline.load_lora_weights(args.output_dir)
+
+                pipeline.load_lora_weights(
+                    args.output_dir, weight_name="pytorch_lora_weights.safetensors"
+                )
 
                 images = log_validation(pipeline, args, accelerator, epoch)
 
