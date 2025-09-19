@@ -1284,39 +1284,24 @@ def main(args):
             if global_step >= args.max_train_steps:
                 break
 
-        if accelerator.is_main_process:
-            if args.validation_prompt is not None and epoch % args.validation_epochs == 0:
-                # create pipeline
-                pipeline = StableDiffusionXLPipeline.from_pretrained(
-                    args.pretrained_model_name_or_path,
-                    vae=vae,
-                    text_encoder=unwrap_model(text_encoder_one),
-                    text_encoder_2=unwrap_model(text_encoder_two),
-                    unet=unwrap_model(unet),
-                    revision=args.revision,
-                    variant=args.variant,
-                    torch_dtype=weight_dtype,
-                )
+        # if accelerator.is_main_process:
+        #     if args.validation_prompt is not None and epoch % args.validation_epochs == 0:
+        #         # create pipeline
+        #         pipeline = StableDiffusionXLPipeline.from_pretrained(
+        #             args.pretrained_model_name_or_path,
+        #             vae=vae,
+        #             text_encoder=unwrap_model(text_encoder_one),
+        #             text_encoder_2=unwrap_model(text_encoder_two),
+        #             unet=unwrap_model(unet),
+        #             revision=args.revision,
+        #             variant=args.variant,
+        #             torch_dtype=weight_dtype,
+        #         )
 
 
-                images = log_validation(pipeline, args, accelerator, epoch)
-
-                ########################################################
-                ############# ENDLESS TOOLS MODIFICATION ###############
-                ########################################################
-
-                # val_save_dir = os.path.join(args.output_dir, f"validation_epoch_{epoch}")
-                # os.makedirs(val_save_dir, exist_ok=True)
-                # for i, img in enumerate(images):
-                #     img.save(os.path.join(val_save_dir, f"val_{i}.png"))
-
-                ########################################################
-                ########################################################
-                ########################################################
-
-
-                del pipeline
-                torch.cuda.empty_cache()
+        #         images = log_validation(pipeline, args, accelerator, epoch)
+        #         del pipeline
+        #         torch.cuda.empty_cache()
 
     # Save the lora layers
     accelerator.wait_for_everyone()
