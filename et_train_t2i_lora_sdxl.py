@@ -1304,13 +1304,10 @@ def main(args):
                 ############# ENDLESS TOOLS MODIFICATION ###############
                 ########################################################
 
-                # Save images on disk
                 val_save_dir = os.path.join(args.output_dir, f"validation_epoch_{epoch}")
                 os.makedirs(val_save_dir, exist_ok=True)
-
-                for i, img in enumerate(images):   # <-- фикс
+                for i, img in enumerate(images):
                     img.save(os.path.join(val_save_dir, f"val_{i}.png"))
-
 
                 ########################################################
                 ########################################################
