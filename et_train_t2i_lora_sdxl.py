@@ -1298,10 +1298,6 @@ def main(args):
                 )
 
 
-                pipeline.load_lora_weights(
-                    args.output_dir, weight_name="pytorch_lora_weights.safetensors"
-                )
-
                 images = log_validation(pipeline, args, accelerator, epoch)
 
                 ########################################################
