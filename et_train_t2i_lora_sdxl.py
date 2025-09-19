@@ -353,13 +353,13 @@ def parse_args(input_args=None):
     ############# ENDLESS TOOLS MODIFICATION ###############
     ########################################################
 
-    parser.add_argument(
-        "--checkpoint_dir",
-        type=str,
-        default=None,
-        help="Directory for intermediate training checkpoints (full model + optimizer state). "
-            "If not set, checkpoints are saved inside output_dir (not recommended)."
-    )
+    # parser.add_argument(
+    #     "--checkpoint_dir",
+    #     type=str,
+    #     default=None,
+    #     help="Directory for intermediate training checkpoints (full model + optimizer state). "
+    #         "If not set, checkpoints are saved inside output_dir (not recommended)."
+    # )
     
     ########################################################
     ########################################################
@@ -1260,22 +1260,62 @@ def main(args):
                                     removing_checkpoint = os.path.join(args.output_dir, removing_checkpoint)
                                     shutil.rmtree(removing_checkpoint)
 
-                        # save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
-                        # accelerator.save_state(save_path)
-                        # logger.info(f"Saved state to {save_path}")
+                        save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
+                        accelerator.save_state(save_path)
+                        logger.info(f"Saved state to {save_path}")
 
                         ########################################################
                         ############# ENDLESS TOOLS MODIFICATION ###############
                         ########################################################
 
-                        ckpt_root = args.checkpoint_dir if args.checkpoint_dir is not None else args.output_dir
-                        save_path = os.path.join(ckpt_root, f"checkpoint-{global_step}")
-                        accelerator.save_state(save_path)
-                        logger.info(f"Saved full checkpoint to {save_path}")
+                        # 1. Сохраняем LoRA вес
+                        unet_ = unwrap_model(unet)
+                        unet_lora_state_dict = convert_state_dict_to_diffusers(get_peft_model_state_dict(unet_))
+
+                        text_encoder_lora_layers, text_encoder_2_lora_layers = None, None
+                        if args.train_text_encoder:
+                            text_encoder_one_ = unwrap_model(text_encoder_one)
+                            text_encoder_two_ = unwrap_model(text_encoder_two)
+                            text_encoder_lora_layers = convert_state_dict_to_diffusers(get_peft_model_state_dict(text_encoder_one_))
+                            text_encoder_2_lora_layers = convert_state_dict_to_diffusers(get_peft_model_state_dict(text_encoder_two_))
+
+                        lora_save_dir = os.path.join(args.output_dir, f"lora_step_{global_step}")
+                        os.makedirs(lora_save_dir, exist_ok=True)
+
+                        StableDiffusionXLPipeline.save_lora_weights(
+                            save_directory=lora_save_dir,
+                            unet_lora_layers=unet_lora_state_dict,
+                            text_encoder_lora_layers=text_encoder_lora_layers,
+                            text_encoder_2_lora_layers=text_encoder_2_lora_layers,
+                        )
+                        logger.info(f"[lora] Saved LoRA weights at step {global_step}")
+
+                        # 2. Генерим картинки
+                        pipeline = StableDiffusionXLPipeline.from_pretrained(
+                            args.pretrained_model_name_or_path,
+                            vae=vae,
+                            text_encoder=unwrap_model(text_encoder_one),
+                            text_encoder_2=unwrap_model(text_encoder_two),
+                            unet=unwrap_model(unet),
+                            revision=args.revision,
+                            variant=args.variant,
+                            torch_dtype=weight_dtype,
+                        )
+                        pipeline.load_lora_weights(lora_save_dir)
+
+                        images = log_validation(pipeline, args, accelerator, epoch)
+                        val_save_dir = os.path.join(args.output_dir, f"validation_step_{global_step}")
+                        os.makedirs(val_save_dir, exist_ok=True)
+                        for i, img in enumerate(images):
+                            img.save(os.path.join(val_save_dir, f"val_{i}.png"))
+
+                        del pipeline
+                        torch.cuda.empty_cache()
 
                         ########################################################
                         ########################################################
                         ########################################################
+
 
             logs = {"step_loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0]}
             progress_bar.set_postfix(**logs)
