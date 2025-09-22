@@ -1297,8 +1297,6 @@ def main(args):
         #             variant=args.variant,
         #             torch_dtype=weight_dtype,
         #         )
-
-
         #         images = log_validation(pipeline, args, accelerator, epoch)
         #         del pipeline
         #         torch.cuda.empty_cache()
