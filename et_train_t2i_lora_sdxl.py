@@ -1266,12 +1266,33 @@ def main(args):
                                 variant=args.variant,
                                 torch_dtype=weight_dtype,
                             )
-                            pipeline.load_lora_weights(save_path)
 
-                            images = log_validation(pipeline, args, accelerator, global_step)
+
+                            # 🔑 фикс: держим VAE в float32
+                            pipeline.vae.to("cuda", dtype=torch.float32)
+
+                            # guidance_scale = 4 для стабильности
+                            # pipeline_args = {
+                            #     "prompt": args.validation_prompt,
+                            #     "guidance_scale": 4.0
+                            # }
+
+                            # pipeline.load_lora_weights(save_path)
+
+                            # images = log_validation(pipeline, args, accelerator, global_step)
+
+                            # if len(images) > 0:
+                            #     images[0].save(os.path.join(save_path, "val.png"))
+
+                            images = [
+                                pipeline(args.validation_prompt, guidance_scale=4.0).images[0]
+                                for _ in range(args.num_validation_images)
+                            ]
+
 
                             if len(images) > 0:
-                                images[0].save(os.path.join(save_path, "val.png"))
+                                for i, img in enumerate(images):
+                                    img.save(os.path.join(save_path, f"val_{i}.png"))
 
                             del pipeline
                             torch.cuda.empty_cache()
