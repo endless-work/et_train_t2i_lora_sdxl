@@ -1254,8 +1254,51 @@ def main(args):
                         ################################################################################################
                         ############# ENDLESS TOOLS MODIFICATION ###############
                         ################################################################################################
-                        # --- Generate validation image for this checkpoint ---
+                        # # --- Generate validation image for this checkpoint ---
+                        # if args.validation_prompt:
+                        #     pipeline = StableDiffusionXLPipeline.from_pretrained(
+                        #         args.pretrained_model_name_or_path,
+                        #         vae=vae,
+                        #         text_encoder=unwrap_model(text_encoder_one),
+                        #         text_encoder_2=unwrap_model(text_encoder_two),
+                        #         unet=unwrap_model(unet),
+                        #         revision=args.revision,
+                        #         variant=args.variant,
+                        #         torch_dtype=weight_dtype,
+                        #     )
+
+                        #     # 🔑 фикс: держим VAE в float32
+                        #     pipeline.vae.to("cuda", dtype=torch.float32)
+
+                        #     images = [
+                        #         pipeline(args.validation_prompt, guidance_scale=4.0).images[0]
+                        #         for _ in range(args.num_validation_images)
+                        #     ]
+
+
+                        #     if len(images) > 0:
+                        #         for i, img in enumerate(images):
+                        #             img.save(os.path.join(save_path, f"val_{i}.png"))
+
+                        #     del pipeline
+                        #     torch.cuda.empty_cache()
+                            ################################################################################################
+                            ################################################################################################
+                            ################################################################################################
+
+
+
+
+                        ################################################################################################
+                        ############# ENDLESS TOOLS MODIFICATION ###############
+                        ################################################################################################
+                        #--- Generate validation image for this checkpoint ---
                         if args.validation_prompt:
+
+                            print(f"\n[VAL] 🔍 Running validation at step {global_step} ...")
+                            print(f"[VAL] Prompt: {args.validation_prompt}")
+                            print(f"[VAL] Checkpoint dir: {save_path}")
+
                             pipeline = StableDiffusionXLPipeline.from_pretrained(
                                 args.pretrained_model_name_or_path,
                                 vae=vae,
@@ -1271,34 +1314,40 @@ def main(args):
                             # 🔑 фикс: держим VAE в float32
                             pipeline.vae.to("cuda", dtype=torch.float32)
 
-                            # guidance_scale = 4 для стабильности
-                            # pipeline_args = {
-                            #     "prompt": args.validation_prompt,
-                            #     "guidance_scale": 4.0
-                            # }
-
-                            # pipeline.load_lora_weights(save_path)
-
-                            # images = log_validation(pipeline, args, accelerator, global_step)
-
-                            # if len(images) > 0:
-                            #     images[0].save(os.path.join(save_path, "val.png"))
-
-                            images = [
-                                pipeline(args.validation_prompt, guidance_scale=4.0).images[0]
-                                for _ in range(args.num_validation_images)
-                            ]
+                            # 🔑 важно: подгружаем LoRA веса из этого чекпоинта
+                            try:
+                                pipeline.load_lora_weights(save_path)
+                                print(f"[VAL] ✅ LoRA weights loaded from {save_path}")
+                            except Exception as e:
+                                print(f"[VAL] ⚠️ Failed to load LoRA weights from {save_path}: {e}")
 
 
-                            if len(images) > 0:
-                                for i, img in enumerate(images):
-                                    img.save(os.path.join(save_path, f"val_{i}.png"))
+                            # Генерация num_validation_images картинок
+                            images = []
+                            for i in range(args.num_validation_images):
+                                try:
+                                    img = pipeline(
+                                        args.validation_prompt,
+                                        guidance_scale=4.0,
+                                        num_inference_steps=30
+                                    ).images[0]
+                                    images.append(img)
+                                    out_path = os.path.join(save_path, f"val_{i}.png")
+                                    img.save(out_path)
+                                    print(f"[VAL] 💾 Saved {out_path}")
+                                except Exception as e:
+                                    print(f"[VAL] ❌ Failed to generate image {i}: {e}")
+
+                            if len(images) == 0:
+                                print("[VAL] ⚠️ No images were generated!")
 
                             del pipeline
                             torch.cuda.empty_cache()
+                            print("[VAL] 🧹 Pipeline cleared from GPU cache\n")
                             ################################################################################################
                             ################################################################################################
                             ################################################################################################
+
 
             logs = {"step_loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0]}
             progress_bar.set_postfix(**logs)
