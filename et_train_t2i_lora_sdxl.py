@@ -707,10 +707,10 @@ def main(args):
     # Set correct lora layers
     unet_lora_config = LoraConfig(
         r=args.rank,
-        # lora_alpha=args.rank,
-        lora_alpha=4, # <-- Endless Tools modification, use alpha=1 for stable training
+        lora_alpha=args.rank,
+        # lora_alpha=4, # <-- Endless Tools modification, use alpha=1 for stable training
         init_lora_weights="gaussian",
-        target_modules=["to_k", "to_q", "to_v", "to_out.0"],
+        target_modules=["to_q", "to_k", "to_v", "to_out.0", "proj_in", "proj_out"],
     )
 
     unet.add_adapter(unet_lora_config)
@@ -1328,7 +1328,7 @@ def main(args):
                                 try:
                                     img = pipeline(
                                         args.validation_prompt,
-                                        guidance_scale=7.0,
+                                        guidance_scale=8.0,
                                         num_inference_steps=30
                                     ).images[0]
                                     images.append(img)
