@@ -708,7 +708,7 @@ def main(args):
     unet_lora_config = LoraConfig(
         r=args.rank,
         # lora_alpha=args.rank,
-        lora_alpha=1, # <-- Endless Tools modification, use alpha=1 for stable training
+        lora_alpha=4, # <-- Endless Tools modification, use alpha=1 for stable training
         init_lora_weights="gaussian",
         target_modules=["to_k", "to_q", "to_v", "to_out.0"],
     )
