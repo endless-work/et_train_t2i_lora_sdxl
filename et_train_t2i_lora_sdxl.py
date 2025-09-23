@@ -708,7 +708,6 @@ def main(args):
     unet_lora_config = LoraConfig(
         r=args.rank,
         lora_alpha=args.rank,
-        # lora_alpha=4, # <-- Endless Tools modification, use alpha=1 for stable training
         init_lora_weights="gaussian",
         target_modules=["to_q", "to_k", "to_v", "to_out.0", "proj_in", "proj_out"],
     )
@@ -1293,57 +1292,57 @@ def main(args):
                         ############# ENDLESS TOOLS MODIFICATION ###############
                         ################################################################################################
                         #--- Generate validation image for this checkpoint ---
-                        if args.validation_prompt:
+                        # if args.validation_prompt:
 
-                            print(f"\n[VAL] 🔍 Running validation at step {global_step} ...")
-                            print(f"[VAL] Prompt: {args.validation_prompt}")
-                            print(f"[VAL] Checkpoint dir: {save_path}")
+                        #     print(f"\n[VAL] 🔍 Running validation at step {global_step} ...")
+                        #     print(f"[VAL] Prompt: {args.validation_prompt}")
+                        #     print(f"[VAL] Checkpoint dir: {save_path}")
 
-                            pipeline = StableDiffusionXLPipeline.from_pretrained(
-                                args.pretrained_model_name_or_path,
-                                vae=vae,
-                                text_encoder=unwrap_model(text_encoder_one),
-                                text_encoder_2=unwrap_model(text_encoder_two),
-                                unet=unwrap_model(unet),
-                                revision=args.revision,
-                                variant=args.variant,
-                                torch_dtype=weight_dtype,
-                            )
-
-
-                            # 🔑 фикс: держим VAE в float32
-                            pipeline.vae.to("cuda", dtype=torch.float32)
-
-                            # 🔑 важно: подгружаем LoRA веса из этого чекпоинта
-                            try:
-                                pipeline.load_lora_weights(save_path)
-                                print(f"[VAL] ✅ LoRA weights loaded from {save_path}")
-                            except Exception as e:
-                                print(f"[VAL] ⚠️ Failed to load LoRA weights from {save_path}: {e}")
+                        #     pipeline = StableDiffusionXLPipeline.from_pretrained(
+                        #         args.pretrained_model_name_or_path,
+                        #         vae=vae,
+                        #         text_encoder=unwrap_model(text_encoder_one),
+                        #         text_encoder_2=unwrap_model(text_encoder_two),
+                        #         unet=unwrap_model(unet),
+                        #         revision=args.revision,
+                        #         variant=args.variant,
+                        #         torch_dtype=weight_dtype,
+                        #     )
 
 
-                            # Генерация num_validation_images картинок
-                            images = []
-                            for i in range(args.num_validation_images):
-                                try:
-                                    img = pipeline(
-                                        args.validation_prompt,
-                                        guidance_scale=8.0,
-                                        num_inference_steps=30
-                                    ).images[0]
-                                    images.append(img)
-                                    out_path = os.path.join(save_path, f"val_{i}.png")
-                                    img.save(out_path)
-                                    print(f"[VAL] 💾 Saved {out_path}")
-                                except Exception as e:
-                                    print(f"[VAL] ❌ Failed to generate image {i}: {e}")
+                        #     # 🔑 фикс: держим VAE в float32
+                        #     pipeline.vae.to("cuda", dtype=torch.float32)
 
-                            if len(images) == 0:
-                                print("[VAL] ⚠️ No images were generated!")
+                        #     # 🔑 важно: подгружаем LoRA веса из этого чекпоинта
+                        #     try:
+                        #         pipeline.load_lora_weights(save_path)
+                        #         print(f"[VAL] ✅ LoRA weights loaded from {save_path}")
+                        #     except Exception as e:
+                        #         print(f"[VAL] ⚠️ Failed to load LoRA weights from {save_path}: {e}")
 
-                            del pipeline
-                            torch.cuda.empty_cache()
-                            print("[VAL] 🧹 Pipeline cleared from GPU cache\n")
+
+                        #     # Генерация num_validation_images картинок
+                        #     images = []
+                        #     for i in range(args.num_validation_images):
+                        #         try:
+                        #             img = pipeline(
+                        #                 args.validation_prompt,
+                        #                 guidance_scale=8.0,
+                        #                 num_inference_steps=30
+                        #             ).images[0]
+                        #             images.append(img)
+                        #             out_path = os.path.join(save_path, f"val_{i}.png")
+                        #             img.save(out_path)
+                        #             print(f"[VAL] 💾 Saved {out_path}")
+                        #         except Exception as e:
+                        #             print(f"[VAL] ❌ Failed to generate image {i}: {e}")
+
+                        #     if len(images) == 0:
+                        #         print("[VAL] ⚠️ No images were generated!")
+
+                        #     del pipeline
+                        #     torch.cuda.empty_cache()
+                        #     print("[VAL] 🧹 Pipeline cleared from GPU cache\n")
                             ################################################################################################
                             ################################################################################################
                             ################################################################################################
