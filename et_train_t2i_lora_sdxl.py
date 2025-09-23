@@ -1328,7 +1328,7 @@ def main(args):
                                 try:
                                     img = pipeline(
                                         args.validation_prompt,
-                                        guidance_scale=4.0,
+                                        guidance_scale=7.0,
                                         num_inference_steps=30
                                     ).images[0]
                                     images.append(img)
