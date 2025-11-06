@@ -47,39 +47,3 @@ wget https://raw.githubusercontent.com/endless-work/et_train_t2i_lora_sdxl/main/
 
 
 
-# Launch training 
-accelerate launch et_train_t2i_lora_sdxl.py \
-  --pretrained_model_name_or_path=stabilityai/stable-diffusion-xl-base-1.0 \
-  --dataset_name=endlesstools/et-sdxl-lora-wood \
-  --caption_column=text \
-  --image_column=image \
-  --resolution=1024 \
-  --train_batch_size=2 \
-  --gradient_accumulation_steps=4 \
-  --rank=16 \
-  --learning_rate=1e-4 \
-  --max_train_steps=3000 \
-  --checkpointing_steps=500 \
-  --output_dir="/workspace/fine-tuning/outputs/lora-wood-xbkdtgv"
-
-
-# create push_hf_trained.py for push on HF model repo
-cat > push_hf_trained.py << 'EOF'
-from huggingface_hub import HfApi
-
-api = HfApi()
-
-api.upload_folder(
-    folder_path="/workspace/fine-tuning/outputs/lora-wood-xbkdtgv",
-    repo_id="endlesstools/et-sdxl-w-wood",
-    repo_type="model",
-    commit_message="Upload LoRA weights"
-)
-
-print("✅ All files uploaded to Hugging Face Hub")
-EOF
-
-
-# start push_hf_trained.py
-python push_hf_trained.py
-
