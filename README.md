@@ -34,6 +34,9 @@ pip install \
 # --- Check installation ---
 python -c "import diffusers; print(diffusers.__version__)"
 
+# --- Update transformers --
+pip install "transformers>=4.55.0,<5.0.0" --upgrade
+
 # --- Login to Hugging Face ---
 huggingface-cli login
 
